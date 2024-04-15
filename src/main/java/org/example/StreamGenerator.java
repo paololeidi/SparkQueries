@@ -21,7 +21,7 @@ public class StreamGenerator {
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
         // Kafka topic to produce messages to
-        String topic = "temperature";
+        String topic = "topic1";
 
         // CSV file path
         String csvFilePath = "stream.csv";
@@ -41,7 +41,7 @@ public class StreamGenerator {
 
                 // Split the CSV line by comma
                 String[] parts = line.split(",");
-                if (parts.length == 3) {
+                if (parts.length == 2) {
                     // Extract temperature and timestamp
                     String timestampStr = parts[0];
                     double temperature = Double.parseDouble(parts[1]);
@@ -59,7 +59,7 @@ public class StreamGenerator {
                     }
 
                     // Send temperature value as message to Kafka topic
-                    ProducerRecord<String, String> record = new ProducerRecord<>(topic, Double.toString(temperature));
+                    ProducerRecord<String, String> record = new ProducerRecord<>(topic, line);
                     producer.send(record);
                 }
             }
