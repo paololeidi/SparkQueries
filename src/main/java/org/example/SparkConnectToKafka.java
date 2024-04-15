@@ -93,6 +93,7 @@ public class SparkConnectToKafka {
 
         StreamingQuery query = decodedDF
                 .select("temperature")
+                .where("temperature > 30")
                 .writeStream()
                 .format("console")
                 .start();
