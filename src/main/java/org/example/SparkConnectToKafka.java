@@ -34,8 +34,9 @@ public class SparkConnectToKafka {
                 .load();
 
         Dataset<Row> decodedDF = df.selectExpr("CAST(value AS STRING) as data")
-                .selectExpr("from_csv(data, 'temperature INT') as decoded_data")
+                .selectExpr("from_csv(data, 'timestamp TIMESTAMP, temperature FLOAT') as decoded_data")
                 .selectExpr(
+                        "decoded_data.timestamp as timestamp",
                         "decoded_data.temperature as temperature");
 
         /*
@@ -92,7 +93,7 @@ public class SparkConnectToKafka {
          */
 
         StreamingQuery query = decodedDF
-                .select("temperature")
+                .select("timestamp","temperature")
                 .writeStream()
                 .format("console")
                 .start();
