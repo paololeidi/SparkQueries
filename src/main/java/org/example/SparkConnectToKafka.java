@@ -93,7 +93,9 @@ public class SparkConnectToKafka {
          */
 
         StreamingQuery query = decodedDF
-                .select("timestamp","temperature")
+                .withWatermark("timestamp", "5 seconds")
+                .groupBy(window(col("timestamp"),"3 seconds"))
+                .agg(avg("temperature")).alias("avg_temperature")
                 .writeStream()
                 .format("console")
                 .start();
