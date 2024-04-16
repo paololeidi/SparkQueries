@@ -92,13 +92,17 @@ public class SparkConnectToKafka {
 
          */
 
-        StreamingQuery query = decodedDF
+        Dataset<Row> result = decodedDF
                 .withWatermark("timestamp", "5 seconds")
                 .groupBy(window(col("timestamp"),"3 seconds", "1 second"))
-                .agg(avg("temperature")).alias("avg_temperature")
-                .writeStream()
-                .outputMode("complete")
-                .format("console")
+                .agg(avg("temperature")).alias("avg_temperature");
+
+
+        StreamingQuery query = result.writeStream()
+                .outputMode("append")
+                .format("json")
+                .option("checkpointLocation", "checkpoint")
+                .option("path","output")
                 .start();
 
         // TODO write on kafka topic
@@ -119,6 +123,9 @@ public class SparkConnectToKafka {
                 .option("truncate", "false")
                 .start()
         */
+
+        // TODO remove checkpoint and output repositories
+
 
         CsvFileGenerator.generateCsvFile();
         StreamGenerator.generateStream();
