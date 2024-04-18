@@ -1,19 +1,24 @@
 package org.example;
 
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.ForeachWriter;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.streaming.Trigger;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
 import static org.apache.spark.sql.functions.*;
 
 public class SparkConnectToKafka {
 
-    private static final String TOPIC = "topic1";
+    private static final String TOPIC = "topic3";
 
     public static void main(String [] args) throws TimeoutException {
 
@@ -34,10 +39,12 @@ public class SparkConnectToKafka {
                 .load();
 
         Dataset<Row> decodedDF = df.selectExpr("CAST(value AS STRING) as data")
-                .selectExpr("from_csv(data, 'timestamp TIMESTAMP, temperature FLOAT') as decoded_data")
+                .selectExpr("from_csv(data, 'timestamp TIMESTAMP, id INT, status STRING, stressLevel INT') as decoded_data")
                 .selectExpr(
-                        "decoded_data.timestamp as timestamp",
-                        "decoded_data.temperature as temperature");
+                        "decoded_data.id as id",
+                        "decoded_data.status as status",
+                        "decoded_data.stressLevel as stressLevel",
+                        "decoded_data.timestamp as timestamp");
 
         /*
 
@@ -93,26 +100,48 @@ public class SparkConnectToKafka {
          */
 
         Dataset<Row> result = decodedDF
-                .withWatermark("timestamp", "5 seconds")
-                .groupBy(window(col("timestamp"),"3 seconds", "1 second"))
-                .agg(avg("temperature")).alias("avg_temperature");
+                .withWatermark("timestamp", "2 seconds")
+                .groupBy(window(col("timestamp"),"10 seconds"))
+                .agg(max("stressLevel")).alias("max_stress_level");
 
-
+        /*
         StreamingQuery query = result.writeStream()
-                .outputMode("append")
-                .format("json")
-                .option("checkpointLocation", "checkpoint")
-                .option("path","output")
+                .outputMode("complete")
+                .format("console")
                 .start();
 
-        // TODO write on kafka topic
-        /*StreamingQuery query2 = decodedDF
+         */
+
+        StreamingQuery query = result.writeStream().foreach(
+                new ForeachWriter() {
+                    @Override
+                    public boolean open(long partitionId, long epochId) {
+                        return true;
+                    }
+                    @Override
+                    public void process(Object value) {
+                        System.out.println("Process " + value.toString() + " at time: " + Instant.now());
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output.csv",true))) {
+                            String line = Instant.now()+","+value.toString();
+                            writer.write(line);
+                            writer.newLine();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            // Handle IOException appropriately
+                        }
+                    }
+                    @Override public void close(Throwable errorOrNull) {
+                    }
+                }
+        ).start();
+
+        /*
+        StreamingQuery query2 = decodedDF
                 .groupBy(window(col("timestamp"), "30 seconds", "5 seconds"))
                 .agg(avg("temperature")).alias("avg_temperature")
                 .writeStream()
                 .format("console")
                 .start();
-
          */
 
         /*
@@ -124,11 +153,11 @@ public class SparkConnectToKafka {
                 .start()
         */
 
-        // TODO remove checkpoint and output repositories
-
-
+        /*
         CsvFileGenerator.generateCsvFile();
         StreamGenerator.generateStream();
+
+         */
 
         try {
             query.awaitTermination();
