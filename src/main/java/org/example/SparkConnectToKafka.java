@@ -101,7 +101,7 @@ public class SparkConnectToKafka {
 
         Dataset<Row> result = decodedDF
                 .withWatermark("timestamp", "2 seconds")
-                .groupBy(window(col("timestamp"),"10 seconds"))
+                .groupBy(window(col("timestamp"),"10 seconds"), col("id"))
                 .agg(max("stressLevel")).alias("max_stress_level");
 
         /*
@@ -120,9 +120,14 @@ public class SparkConnectToKafka {
                     }
                     @Override
                     public void process(Object value) {
-                        System.out.println("Process " + value.toString() + " at time: " + Instant.now());
+                        String line = value.toString();
+                        line = line.replace("[", "")
+                                .replace("]", "")
+                                .replace(".0", "")
+                                .replace(":00","");
+                        System.out.println("Process " + line + " at time: " + Instant.now());
                         try (BufferedWriter writer = new BufferedWriter(new FileWriter("output.csv",true))) {
-                            String line = Instant.now()+","+value.toString();
+                            line = Instant.now()+","+line;
                             writer.write(line);
                             writer.newLine();
                         } catch (IOException e) {
