@@ -16,9 +16,10 @@ import java.util.concurrent.TimeoutException;
 
 import static org.apache.spark.sql.functions.*;
 
+// Must use JAVA 11
 public class SparkConnectToKafka {
 
-    private static final String TOPIC = "topic3";
+    private static final String TOPIC = "stress";
 
     public static void main(String [] args) throws TimeoutException {
 
@@ -38,6 +39,20 @@ public class SparkConnectToKafka {
                 .option("subscribe", TOPIC)
                 .load();
 
+        Dataset<Row> df2 = spark
+                .readStream()
+                .format("kafka")
+                .option("kafka.bootstrap.servers", "localhost:9092")
+                .option("subscribe", "topic2")
+                .load();
+
+        Dataset<Row> windowed_temp = spark
+                .readStream()
+                .format("kafka")
+                .option("kafka.bootstrap.servers", "localhost:9092")
+                .option("subscribe", "topic3")
+                .load();
+
         Dataset<Row> decodedDF = df.selectExpr("CAST(value AS STRING) as data")
                 .selectExpr("from_csv(data, 'timestamp TIMESTAMP, id INT, status STRING, stressLevel INT') as decoded_data")
                 .selectExpr(
@@ -45,6 +60,8 @@ public class SparkConnectToKafka {
                         "decoded_data.status as status",
                         "decoded_data.stressLevel as stressLevel",
                         "decoded_data.timestamp as timestamp");
+
+        Dataset<Row> decodedDF2 = windowed_temp.selectExpr("CAST(value AS STRING) as data");
 
         /*
 
@@ -140,6 +157,29 @@ public class SparkConnectToKafka {
                 }
         ).start();
 
+        StreamingQuery query2 = decodedDF2.writeStream().foreach(
+                new ForeachWriter() {
+                    @Override
+                    public boolean open(long partitionId, long epochId) {
+                        return true;
+                    }
+                    @Override
+                    public void process(Object value) {
+                        String line = value.toString();
+                        System.out.println("Process w" + line + " at time: " + Instant.now());
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output2.csv",true))) {
+                            writer.write(line);
+                            writer.newLine();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            // Handle IOException appropriately
+                        }
+                    }
+                    @Override public void close(Throwable errorOrNull) {
+                    }
+                }
+        ).start();
+
         /*
         StreamingQuery query2 = decodedDF
                 .groupBy(window(col("timestamp"), "30 seconds", "5 seconds"))
@@ -166,6 +206,7 @@ public class SparkConnectToKafka {
 
         try {
             query.awaitTermination();
+            query2.awaitTermination();
         } catch (final StreamingQueryException e) {
             e.printStackTrace();
         }
