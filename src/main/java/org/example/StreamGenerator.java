@@ -36,27 +36,5 @@ public class StreamGenerator {
         } catch (IOException | InterruptedException | ExecutionException e) {
             System.err.println("Error: " + e.getMessage());
         }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader("stream2.csv"))) {
-            Properties props = new Properties();
-            props.put("bootstrap.servers", BOOTSTRAP_SERVERS);
-            props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-            props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
-            try (KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
-                String line;
-                reader.readLine(); // Skip header
-                while ((line = reader.readLine()) != null) {
-                    ProducerRecord<String, String> record = new ProducerRecord<>("topic2", line);
-                    producer.send(record).get();
-                    System.out.println("Sent: " + line);
-                    Thread.sleep(1000); // Sleep for 1 second between each message (adjust as needed)
-                }
-            }
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-
-
     }
 }

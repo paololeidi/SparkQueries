@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class CsvGenerator {
     public static void main(String[] args) {
-        String csvFile = "stream2.csv";
+        String csvFile = "stream.csv";
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(csvFile))) {
             // Write header
