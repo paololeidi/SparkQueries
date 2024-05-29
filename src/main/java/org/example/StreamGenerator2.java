@@ -10,14 +10,14 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 
-public class StreamGenerator {
+public class StreamGenerator2 {
 
-    private static final String TOPIC_NAME = "stress"; // Change this to your Kafka topic name
+    private static final String TOPIC_NAME = "weight"; // Change this to your Kafka topic name
     private static final String BOOTSTRAP_SERVERS = "localhost:9092"; // Change this to your Kafka bootstrap servers
 
 
     public static void main(String[] args) {
-        try (BufferedReader reader = new BufferedReader(new FileReader("stress.csv"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("weight.csv"))) {
             Properties props = new Properties();
             props.put("bootstrap.servers", BOOTSTRAP_SERVERS);
             props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");

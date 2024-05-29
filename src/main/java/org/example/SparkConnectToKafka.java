@@ -19,8 +19,6 @@ import static org.apache.spark.sql.functions.*;
 // Must use JAVA 11
 public class SparkConnectToKafka {
 
-    private static final String TOPIC = "stress";
-
     public static void main(String [] args) throws TimeoutException {
 
         final String master = args.length > 0 ? args[0] : "local[4]";
@@ -32,21 +30,21 @@ public class SparkConnectToKafka {
                 .getOrCreate();
         spark.sparkContext().setLogLevel("ERROR");
 
-        Dataset<Row> df = spark
+        Dataset<Row> stressStream = spark
                 .readStream()
                 .format("kafka")
                 .option("kafka.bootstrap.servers", "localhost:9092")
-                .option("subscribe", TOPIC)
+                .option("subscribe", "stress")
                 .load();
 
-        Dataset<Row> windowed_temp = spark
+        Dataset<Row> weightStream = spark
                 .readStream()
                 .format("kafka")
                 .option("kafka.bootstrap.servers", "localhost:9092")
-                .option("subscribe", "topic3")
+                .option("subscribe", "weight")
                 .load();
 
-        Dataset<Row> decodedDF = df.selectExpr("CAST(value AS STRING) as data")
+        Dataset<Row> stressStreamDecoded = stressStream.selectExpr("CAST(value AS STRING) as data")
                 .selectExpr("from_csv(data, 'timestamp TIMESTAMP, id INT, status STRING, stressLevel INT') as decoded_data")
                 .selectExpr(
                         "decoded_data.id as id",
@@ -54,45 +52,44 @@ public class SparkConnectToKafka {
                         "decoded_data.stressLevel as stressLevel",
                         "decoded_data.timestamp as timestamp");
 
-        Dataset<Row> decodedDF2 = windowed_temp.selectExpr("CAST(value AS STRING) as data");
+        Dataset<Row> weightStreamDecoded = stressStream.selectExpr("CAST(value AS STRING) as data")
+                .selectExpr("from_csv(data, 'timestamp TIMESTAMP, id INT, weight FLOAT') as decoded_data")
+                .selectExpr(
+                        "decoded_data.id as id",
+                        "decoded_data.weight as weight",
+                        "decoded_data.timestamp as timestamp");
 
-        Dataset<Row> result1 = decodedDF
+        Dataset<Row> result1 = stressStreamDecoded
                 .withWatermark("timestamp", "2 seconds")
                 .groupBy(window(col("timestamp"),"10 seconds"))
                 .agg(avg("stressLevel")).alias("avg_stress");
 
-        Dataset<Row> result2 = decodedDF
+        Dataset<Row> result2 = stressStreamDecoded
                 .withWatermark("timestamp", "2 seconds")
                 .groupBy(window(col("timestamp"),"10 seconds","5 seconds"))
                 .agg(avg("stressLevel")).alias("avg_stress");
 
-        Dataset<Row> result3 = decodedDF
+        Dataset<Row> result3 = stressStreamDecoded
                 .withWatermark("timestamp", "2 seconds")
                 .groupBy(window(col("timestamp"),"10 seconds","1 second"))
                 .agg(avg("stressLevel")).alias("avg_stress");
 
-        Dataset<Row> result4 = decodedDF
+        Dataset<Row> result4 = stressStreamDecoded
                 .withWatermark("timestamp", "2 seconds")
                 .groupBy(window(col("timestamp"),"10 seconds"),col("id"))
                 .agg(max("stressLevel")).alias("max_stress");
 
-        Dataset<Row> result5 = decodedDF
+        Dataset<Row> result5 = stressStreamDecoded
                 .withWatermark("timestamp", "2 seconds")
                 .groupBy(window(col("timestamp"),"10 seconds","5 seconds"),col("id"))
                 .agg(max("stressLevel")).alias("max_stress");
 
-        Dataset<Row> result6 = decodedDF
+        Dataset<Row> result6 = stressStreamDecoded
                 .withWatermark("timestamp", "2 seconds")
                 .groupBy(window(col("timestamp"),"10 seconds","1 second"),col("id"))
                 .agg(max("stressLevel")).alias("max_stress");
 
-        /*
-        StreamingQuery query = result.writeStream()
-                .outputMode("complete")
-                .format("console")
-                .start();
 
-         */
 
         StreamingQuery query = result6.writeStream().foreach(
                 new ForeachWriter() {
@@ -121,7 +118,7 @@ public class SparkConnectToKafka {
                 }
         ).start();
 
-        StreamingQuery query2 = decodedDF2.writeStream().foreach(
+        StreamingQuery query2 = weightStreamDecoded.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
                     public boolean open(long partitionId, long epochId) {
@@ -130,8 +127,12 @@ public class SparkConnectToKafka {
                     @Override
                     public void process(Object value) {
                         String line = value.toString();
-                        System.out.println("Process w" + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output2.csv",true))) {
+                        line = line.replace("[", "")
+                                .replace("]", "")
+                                .replace(".0", "")
+                                .replace(":00","");
+                        System.out.println("Process " + line + " at time: " + Instant.now());
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output6.csv",true))) {
                             writer.write(line);
                             writer.newLine();
                         } catch (IOException e) {
@@ -144,33 +145,8 @@ public class SparkConnectToKafka {
                 }
         ).start();
 
-        /*
-        StreamingQuery query2 = decodedDF
-                .groupBy(window(col("timestamp"), "30 seconds", "5 seconds"))
-                .agg(avg("temperature")).alias("avg_temperature")
-                .writeStream()
-                .format("console")
-                .start();
-         */
-
-        /*
-        final StreamingQuery query = spark.sql(query1)
-                .writeStream()
-                .outputMode("update")
-                .format("console")
-                .option("truncate", "false")
-                .start()
-        */
-
-        /*
-        CsvFileGenerator.generateCsvFile();
-        StreamGenerator.generateStream();
-
-         */
-
         try {
             query.awaitTermination();
-            query2.awaitTermination();
         } catch (final StreamingQueryException e) {
             e.printStackTrace();
         }
