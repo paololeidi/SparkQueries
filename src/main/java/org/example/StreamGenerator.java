@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 
 public class StreamGenerator {
 
-    private static final String BOOTSTRAP_SERVERS = "localhost:9092"; // Change this to your Kafka bootstrap servers
+    private static final String BOOTSTRAP_SERVERS = "localhost:29092"; // Change this to your Kafka bootstrap servers
 
     public static void main(String[] args) {
         ExecutorService executor = Executors.newFixedThreadPool(2);
