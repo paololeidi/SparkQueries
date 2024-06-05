@@ -12,7 +12,7 @@ import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CsvJsonGenerator {
+public class StreamFilesGenerator {
     private static final double MEAN = 15.00;
     private static final double STD_DEV = 4.00;
 
@@ -21,7 +21,7 @@ public class CsvJsonGenerator {
         List<StressRecord> stressRecords = new ArrayList<>();
         List<WeightRecord> weightRecords = new ArrayList<>();
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter("stress.csv"))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter("Files/Input/stress.csv"))) {
             // Write header
             writer.println("timestamp,id,status,stressLevel");
 
@@ -48,7 +48,7 @@ public class CsvJsonGenerator {
             System.err.println("Error writing to stress CSV file: " + e.getMessage());
         }
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter("weight.csv"))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter("Files/Input/weight.csv"))) {
             // Write CSV header
             writer.println("timestamp,id,weight");
             LocalDateTime timestamp = start;
@@ -71,7 +71,7 @@ public class CsvJsonGenerator {
         }
 
         // Write stress records to JSON file
-        try (FileWriter writer = new FileWriter("stress.json")) {
+        try (FileWriter writer = new FileWriter("Files/Input/stress.json")) {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             gson.toJson(stressRecords, writer);
 
@@ -81,7 +81,7 @@ public class CsvJsonGenerator {
         }
 
         // Write weight records to JSON file
-        try (FileWriter writer = new FileWriter("weight.json")) {
+        try (FileWriter writer = new FileWriter("Files/Input/weight.json")) {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             gson.toJson(weightRecords, writer);
 

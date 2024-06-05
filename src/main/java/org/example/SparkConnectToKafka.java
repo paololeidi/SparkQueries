@@ -108,7 +108,7 @@ public class SparkConnectToKafka {
         );
 
 
-        StreamingQuery query = result6.writeStream().foreach(
+        StreamingQuery query = result1.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
                     public boolean open(long partitionId, long epochId) {
@@ -122,7 +122,7 @@ public class SparkConnectToKafka {
                                 .replace(".0", "")
                                 .replace(":00","");
                         System.out.println("Process " + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output6.csv",true))) {
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output1.csv",true))) {
                             writer.write(line);
                             writer.newLine();
                         } catch (IOException e) {

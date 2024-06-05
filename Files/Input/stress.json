@@ -1,0 +1,356 @@
+[
+  {
+    "timestamp": "2024-06-05 15:52:11",
+    "stressId": 2,
+    "status": "ccc",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:52:12",
+    "stressId": 3,
+    "status": "ccc",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:52:13",
+    "stressId": 3,
+    "status": "aaa",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:14",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:52:15",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:52:16",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:52:17",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:18",
+    "stressId": 1,
+    "status": "aaa",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:19",
+    "stressId": 3,
+    "status": "aaa",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:52:20",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:52:21",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 1
+  },
+  {
+    "timestamp": "2024-06-05 15:52:22",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 8
+  },
+  {
+    "timestamp": "2024-06-05 15:52:23",
+    "stressId": 3,
+    "status": "aaa",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:52:24",
+    "stressId": 2,
+    "status": "aaa",
+    "stressLevel": 2
+  },
+  {
+    "timestamp": "2024-06-05 15:52:25",
+    "stressId": 2,
+    "status": "ccc",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:52:26",
+    "stressId": 3,
+    "status": "ccc",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:27",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:52:28",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:52:29",
+    "stressId": 2,
+    "status": "ccc",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:30",
+    "stressId": 3,
+    "status": "aaa",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:52:31",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:52:32",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 1
+  },
+  {
+    "timestamp": "2024-06-05 15:52:33",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:52:34",
+    "stressId": 3,
+    "status": "aaa",
+    "stressLevel": 2
+  },
+  {
+    "timestamp": "2024-06-05 15:52:35",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:36",
+    "stressId": 2,
+    "status": "ccc",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:52:37",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:38",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 8
+  },
+  {
+    "timestamp": "2024-06-05 15:52:39",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:52:40",
+    "stressId": 1,
+    "status": "aaa",
+    "stressLevel": 1
+  },
+  {
+    "timestamp": "2024-06-05 15:52:41",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 8
+  },
+  {
+    "timestamp": "2024-06-05 15:52:42",
+    "stressId": 2,
+    "status": "bbb",
+    "stressLevel": 2
+  },
+  {
+    "timestamp": "2024-06-05 15:52:43",
+    "stressId": 3,
+    "status": "ccc",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:52:44",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 8
+  },
+  {
+    "timestamp": "2024-06-05 15:52:45",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:46",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 8
+  },
+  {
+    "timestamp": "2024-06-05 15:52:47",
+    "stressId": 2,
+    "status": "bbb",
+    "stressLevel": 2
+  },
+  {
+    "timestamp": "2024-06-05 15:52:48",
+    "stressId": 1,
+    "status": "aaa",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:49",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:52:50",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:52:51",
+    "stressId": 2,
+    "status": "ccc",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:52:52",
+    "stressId": 2,
+    "status": "bbb",
+    "stressLevel": 2
+  },
+  {
+    "timestamp": "2024-06-05 15:52:53",
+    "stressId": 1,
+    "status": "aaa",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:52:54",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:52:55",
+    "stressId": 2,
+    "status": "aaa",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:52:56",
+    "stressId": 3,
+    "status": "aaa",
+    "stressLevel": 8
+  },
+  {
+    "timestamp": "2024-06-05 15:52:57",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:52:58",
+    "stressId": 2,
+    "status": "ccc",
+    "stressLevel": 4
+  },
+  {
+    "timestamp": "2024-06-05 15:52:59",
+    "stressId": 2,
+    "status": "bbb",
+    "stressLevel": 7
+  },
+  {
+    "timestamp": "2024-06-05 15:53:00",
+    "stressId": 2,
+    "status": "aaa",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:53:01",
+    "stressId": 1,
+    "status": "ccc",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:53:02",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:53:03",
+    "stressId": 1,
+    "status": "bbb",
+    "stressLevel": 3
+  },
+  {
+    "timestamp": "2024-06-05 15:53:04",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:53:05",
+    "stressId": 1,
+    "status": "aaa",
+    "stressLevel": 6
+  },
+  {
+    "timestamp": "2024-06-05 15:53:06",
+    "stressId": 3,
+    "status": "bbb",
+    "stressLevel": 8
+  },
+  {
+    "timestamp": "2024-06-05 15:53:07",
+    "stressId": 3,
+    "status": "aaa",
+    "stressLevel": 2
+  },
+  {
+    "timestamp": "2024-06-05 15:53:08",
+    "stressId": 3,
+    "status": "ccc",
+    "stressLevel": 5
+  },
+  {
+    "timestamp": "2024-06-05 15:53:09",
+    "stressId": 2,
+    "status": "bbb",
+    "stressLevel": 6
+  }
+]
