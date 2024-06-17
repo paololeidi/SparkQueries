@@ -20,8 +20,8 @@ public class JsonStreamGenerator {
     public static void main(String[] args) {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        executor.submit(() -> processFile("stress.json", "stress"));
-        executor.submit(() -> processFile("weight.json", "weight"));
+        executor.submit(() -> processFile("Files/Input/stress.json", "stress"));
+        executor.submit(() -> processFile("Files/Input/weight.json", "weight"));
 
         executor.shutdown();
     }

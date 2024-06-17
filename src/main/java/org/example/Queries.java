@@ -6,7 +6,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
-import org.apache.spark.sql.streaming.Trigger;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -17,7 +16,7 @@ import java.util.concurrent.TimeoutException;
 import static org.apache.spark.sql.functions.*;
 
 // Must use JAVA 11
-public class SparkConnectToKafka {
+public class Queries {
 
     public static void main(String [] args) throws TimeoutException {
 
@@ -103,12 +102,12 @@ public class SparkConnectToKafka {
                 expr(
                         "stressId = weightId AND " +
                                 "weightTime >= stressTime AND " +
-                                "weightTime <= stressTime + interval 1 hour "),
+                                "weightTime <= stressTime + interval 5 seconds "),
                 "leftOuter"                 // can be "inner", "leftOuter", "rightOuter", "fullOuter", "leftSemi"
         );
 
 
-        StreamingQuery query = result1.writeStream().foreach(
+        StreamingQuery query = result5.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
                     public boolean open(long partitionId, long epochId) {
@@ -122,7 +121,7 @@ public class SparkConnectToKafka {
                                 .replace(".0", "")
                                 .replace(":00","");
                         System.out.println("Process " + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output1.csv",true))) {
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output5.csv",true))) {
                             writer.write(line);
                             writer.newLine();
                         } catch (IOException e) {
@@ -149,7 +148,7 @@ public class SparkConnectToKafka {
                                 .replace(".0", "")
                                 .replace(":00","");
                         System.out.println("Process " + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output7.csv",true))) {
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output7.csv",true))) {
                             writer.write(line);
                             writer.newLine();
                         } catch (IOException e) {
@@ -176,7 +175,7 @@ public class SparkConnectToKafka {
                                 .replace(".0", "")
                                 .replace(":00","");
                         System.out.println("Process " + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("join.csv",true))) {
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/join.csv",true))) {
                             writer.write(line);
                             writer.newLine();
                         } catch (IOException e) {
