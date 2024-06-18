@@ -61,17 +61,17 @@ public class Queries {
         Dataset<Row> result1 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
                 .groupBy(window(col("stressTime"),"10 seconds"))
-                .agg(avg("stressLevel")).alias("avg_stress");
+                .agg(max("stressLevel")).alias("max_stress");
 
         Dataset<Row> result2 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
                 .groupBy(window(col("stressTime"),"10 seconds","5 seconds"))
-                .agg(avg("stressLevel")).alias("avg_stress");
+                .agg(max("stressLevel")).alias("max_stress");
 
         Dataset<Row> result3 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
                 .groupBy(window(col("stressTime"),"10 seconds","1 second"))
-                .agg(avg("stressLevel")).alias("avg_stress");
+                .agg(max("stressLevel")).alias("max_stress");
 
         Dataset<Row> result4 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
@@ -88,80 +88,21 @@ public class Queries {
                 .groupBy(window(col("stressTime"),"10 seconds","1 second"),col("stressId"))
                 .agg(max("stressLevel")).alias("max_stress");
 
-        Dataset<Row> result7 = weightStreamDecoded
-                .withWatermark("weightTime", "2 seconds")
-                .groupBy(window(col("weightTime"),"10 seconds","1 second"),col("weightId"))
-                .agg(max("weight")).alias("max_stress");
-
         // Apply watermarks on event-time columns
         Dataset<Row> stressWithWatermark = stressStreamDecoded.withWatermark("stressTime", "30 seconds");
         Dataset<Row> weightWithWatermark = weightStreamDecoded.withWatermark("weightTime", "30 seconds");
 
-        Dataset<Row> joined = stressWithWatermark.join(
+        Dataset<Row> join = stressWithWatermark.join(
                 weightWithWatermark,
                 expr(
                         "stressId = weightId AND " +
                                 "weightTime >= stressTime AND " +
-                                "weightTime <= stressTime + interval 5 seconds "),
+                                "weightTime <= stressTime + interval 10 seconds "),
                 "leftOuter"                 // can be "inner", "leftOuter", "rightOuter", "fullOuter", "leftSemi"
         );
 
 
-        StreamingQuery query = result5.writeStream().foreach(
-                new ForeachWriter() {
-                    @Override
-                    public boolean open(long partitionId, long epochId) {
-                        return true;
-                    }
-                    @Override
-                    public void process(Object value) {
-                        String line = value.toString();
-                        line = line.replace("[", "")
-                                .replace("]", "")
-                                .replace(".0", "")
-                                .replace(":00","");
-                        System.out.println("Process " + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output5.csv",true))) {
-                            writer.write(line);
-                            writer.newLine();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            // Handle IOException appropriately
-                        }
-                    }
-                    @Override public void close(Throwable errorOrNull) {
-                    }
-                }
-        ).start();
-
-        StreamingQuery query2 = result7.writeStream().foreach(
-                new ForeachWriter() {
-                    @Override
-                    public boolean open(long partitionId, long epochId) {
-                        return true;
-                    }
-                    @Override
-                    public void process(Object value) {
-                        String line = value.toString();
-                        line = line.replace("[", "")
-                                .replace("]", "")
-                                .replace(".0", "")
-                                .replace(":00","");
-                        System.out.println("Process " + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output7.csv",true))) {
-                            writer.write(line);
-                            writer.newLine();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            // Handle IOException appropriately
-                        }
-                    }
-                    @Override public void close(Throwable errorOrNull) {
-                    }
-                }
-        ).start();
-
-        StreamingQuery query3 = joined.writeStream().foreach(
+        StreamingQuery query = join.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
                     public boolean open(long partitionId, long epochId) {
@@ -190,8 +131,6 @@ public class Queries {
 
         try {
             query.awaitTermination();
-            query2.awaitTermination();
-            query3.awaitTermination();
         } catch (final StreamingQueryException e) {
             e.printStackTrace();
         }

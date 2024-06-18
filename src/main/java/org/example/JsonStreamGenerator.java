@@ -38,7 +38,7 @@ public class JsonStreamGenerator {
             while (elements.hasNext()) {
                 JsonNode element = elements.next();
                 sendRecord(producer, topic, element.toString());
-                Thread.sleep(1000); // Sleep for 1 second between each message (adjust as needed)
+                //Thread.sleep(1000); // Sleep for 1 second between each message (adjust as needed)
             }
         } catch (IOException | InterruptedException | ExecutionException e) {
             System.err.println("Error in " + fileName + " processing: " + e.getMessage());
