@@ -6,6 +6,7 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -17,6 +18,8 @@ import static org.apache.spark.sql.functions.*;
 
 // Must use JAVA 11
 public class Queries {
+
+    private static final boolean JOIN_FORMAT = true;
 
     public static void main(String [] args) throws TimeoutException {
 
@@ -96,13 +99,13 @@ public class Queries {
                 weightWithWatermark,
                 expr(
                         "stressId = weightId AND " +
-                                "weightTime >= stressTime AND " +
-                                "weightTime <= stressTime + interval 10 seconds "),
+                                "weightTime >= stressTime - interval 5 seconds AND " +
+                                "weightTime <= stressTime + interval 5 seconds "),
                 "leftOuter"                 // can be "inner", "leftOuter", "rightOuter", "fullOuter", "leftSemi"
-        );
+        ).select("stressTime", "stressId", "status", "stressLevel", "weightTime", "weight");
 
 
-        StreamingQuery query = join.writeStream().foreach(
+        StreamingQuery query = result2.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
                     public boolean open(long partitionId, long epochId) {
@@ -110,14 +113,23 @@ public class Queries {
                     }
                     @Override
                     public void process(Object value) {
-                        String line = value.toString();
-                        line = line.replace("[", "")
-                                .replace("]", "")
-                                .replace(".0", "")
-                                .replace(":00","");
-                        System.out.println("Process " + line + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/join.csv",true))) {
-                            writer.write(line);
+                        String line = value.toString().replace("[","").replace("]","");
+                        System.out.println("line: "+line);
+                        // Split the line using "," as separator
+                        String[] tokens = line.split(",");
+                        // Apply the replace functions only to the first token
+                        tokens[0] = formatTimestamp(tokens[0]);
+                        if (!JOIN_FORMAT){
+                            tokens[1] = formatTimestamp(tokens[1]);
+                        } else {
+                            tokens[4] = formatTimestamp(tokens[4]);
+                        }
+                        // Build the full line again with tokens separated by ","
+                        String modifiedLine = String.join(",", tokens);
+
+                        System.out.println("Process " + modifiedLine + " at time: " + Instant.now());
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output2.csv",true))) {
+                            writer.write(modifiedLine);
                             writer.newLine();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -136,5 +148,12 @@ public class Queries {
         }
 
         spark.close();
+    }
+
+    @NotNull
+    private static String formatTimestamp(String token) {
+        return token
+                .replace(".0", "")
+                .replace(":00", "");
     }
 }
