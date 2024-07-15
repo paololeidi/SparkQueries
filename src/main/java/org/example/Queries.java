@@ -19,7 +19,7 @@ import static org.apache.spark.sql.functions.*;
 // Must use JAVA 11
 public class Queries {
 
-    private static final boolean JOIN_FORMAT = true;
+    private static final boolean JOIN_FORMAT = false;
 
     public static void main(String [] args) throws TimeoutException {
 
@@ -54,6 +54,8 @@ public class Queries {
                         "decoded_data.stressLevel as stressLevel",
                         "decoded_data.stressTime as stressTime");
 
+        stressStreamDecoded.printSchema();
+
         Dataset<Row> weightStreamDecoded = weightStream.selectExpr("CAST(value AS STRING) as data")
                 .selectExpr("from_csv(data, 'weightTime TIMESTAMP, weightId INT, weight FLOAT') as decoded_data")
                 .selectExpr(
@@ -79,7 +81,9 @@ public class Queries {
         Dataset<Row> result4 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
                 .groupBy(window(col("stressTime"),"10 seconds"),col("stressId"))
-                .agg(max("stressLevel")).alias("max_stress");
+                .agg(max("stressLevel"));
+
+        result4.printSchema();
 
         Dataset<Row> result5 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
@@ -90,6 +94,96 @@ public class Queries {
                 .withWatermark("stressTime", "2 seconds")
                 .groupBy(window(col("stressTime"),"10 seconds","1 second"),col("stressId"))
                 .agg(max("stressLevel")).alias("max_stress");
+
+        Dataset<Row> result7 = stressStreamDecoded
+                .withWatermark("stressTime", "2 seconds")
+                .groupBy(window(col("stressTime"),"10 seconds"))
+                .agg(min("stressLevel")).alias("min_stress");
+
+        Dataset<Row> result8 = stressStreamDecoded
+                .withWatermark("stressTime", "2 seconds")
+                .groupBy(window(col("stressTime"),"10 seconds","5 seconds"))
+                .agg(min("stressLevel")).alias("min_stress");
+
+        Dataset<Row> result9 = stressStreamDecoded
+                .withWatermark("stressTime", "2 seconds")
+                .groupBy(window(col("stressTime"),"10 seconds","1 second"))
+                .agg(min("stressLevel")).alias("min_stress");
+
+        Dataset<Row> result10 = stressStreamDecoded
+                .withWatermark("stressTime", "2 seconds")
+                .groupBy(window(col("stressTime"),"10 seconds"),col("stressId"))
+                .agg(min("stressLevel")).alias("min_stress");
+
+        Dataset<Row> result11 = stressStreamDecoded
+                .withWatermark("stressTime", "2 seconds")
+                .groupBy(window(col("stressTime"),"10 seconds","5 seconds"),col("stressId"))
+                .agg(min("stressLevel")).alias("min_stress");
+
+        Dataset<Row> result12 = stressStreamDecoded
+                .withWatermark("stressTime", "2 seconds")
+                .groupBy(window(col("stressTime"),"10 seconds","1 second"),col("stressId"))
+                .agg(min("stressLevel")).alias("min_stress");
+
+        Dataset<Row> result13 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds"))
+                .agg(avg("weight")).alias("avg_weight");
+
+        Dataset<Row> result14 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","5 seconds"))
+                .agg(avg("weight")).alias("avg_weight");
+
+        Dataset<Row> result15 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","1 second"))
+                .agg(avg("weight")).alias("avg_weight");
+
+        Dataset<Row> result16 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds"),col("weightId"))
+                .agg(avg("weight")).alias("avg_weight");
+
+        Dataset<Row> result17 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","5 seconds"),col("weightId"))
+                .agg(avg("weight")).alias("avg_weight");
+
+        Dataset<Row> result18 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","1 second"),col("weightId"))
+                .agg(avg("weight")).alias("avg_weight");
+
+        Dataset<Row> result19 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds"))
+                .count().alias("numberOfEvents");
+
+        Dataset<Row> result20 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","5 seconds"))
+                .count().alias("numberOfEvents");
+
+        Dataset<Row> result21 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","1 second"))
+                .count().alias("numberOfEvents");
+
+        Dataset<Row> result22 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds"),col("weightId"))
+                .count().alias("numberOfEvents");
+
+        Dataset<Row> result23 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","5 seconds"),col("weightId"))
+                .count().alias("numberOfEvents");
+
+        Dataset<Row> result24 = weightStreamDecoded
+                .withWatermark("weightTime", "2 seconds")
+                .groupBy(window(col("weightTime"),"10 seconds","1 second"),col("weightId"))
+                .count().alias("numberOfEvents");
 
         // Apply watermarks on event-time columns
         Dataset<Row> stressWithWatermark = stressStreamDecoded.withWatermark("stressTime", "30 seconds");
@@ -105,7 +199,7 @@ public class Queries {
         ).select("stressTime", "stressId", "status", "stressLevel", "weightTime", "weight");
 
 
-        StreamingQuery query = result2.writeStream().foreach(
+        StreamingQuery query = result4.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
                     public boolean open(long partitionId, long epochId) {
@@ -128,7 +222,7 @@ public class Queries {
                         String modifiedLine = String.join(",", tokens);
 
                         System.out.println("Process " + modifiedLine + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output2.csv",true))) {
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output4_2.csv",true))) {
                             writer.write(modifiedLine);
                             writer.newLine();
                         } catch (IOException e) {
