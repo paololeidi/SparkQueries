@@ -222,7 +222,7 @@ public class Queries {
                         String modifiedLine = String.join(",", tokens);
 
                         System.out.println("Process " + modifiedLine + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/output4_2.csv",true))) {
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/Queries/output4.csv",true))) {
                             writer.write(modifiedLine);
                             writer.newLine();
                         } catch (IOException e) {
@@ -247,7 +247,6 @@ public class Queries {
     @NotNull
     private static String formatTimestamp(String token) {
         return token
-                .replace(".0", "")
-                .replace(":00", "");
+                .replace(".0", "");
     }
 }

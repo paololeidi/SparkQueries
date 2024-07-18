@@ -30,8 +30,12 @@ public class QueriesComposition {
     private static final boolean JOIN_FORMAT = false;
     private static final String STRESS_TOPIC = "stress";
     private static final String BOOTSTRAP_SERVER = "localhost:9092";
-    private static final String KSQL_BOOTSTRAP_SERVER = "localhost:29092";
-    private static final boolean SEND_TO_KSQL = true;
+    private static final String KSQL_BOOTSTRAP_SERVER = "localhost:9092";
+    private static final boolean QUERY3_ON_KSQLDB = true;
+    private static final boolean QUERY1 = false;
+    private static final boolean QUERY2 = true;
+    private static final boolean QUERY3 = false;
+    public static final String OUTPUT_FILE_NAME = "Files/Output/Networks/flink-spark-spark.csv";
 
 
     public static void main(String [] args) throws TimeoutException {
@@ -39,7 +43,7 @@ public class QueriesComposition {
         final String master = args.length > 0 ? args[0] : "local[4]";
 
         String server = "";
-        if (!SEND_TO_KSQL)
+        if (!QUERY3_ON_KSQLDB)
             server = BOOTSTRAP_SERVER;
         else
             server = KSQL_BOOTSTRAP_SERVER;
@@ -226,7 +230,7 @@ public class QueriesComposition {
 
         Dataset<Row> result4_2 = outputStreamDecoded
                 .withWatermark("windowClose", "2 seconds")
-                .groupBy(window(col("windowClose"),"5 seconds", "2 seconds"),col("id"))
+                .groupBy(window(col("windowClose"),"4 seconds", "2 seconds"),col("id"))
                 .agg(max("maxStress"));
 
         // Third level queries
@@ -248,7 +252,7 @@ public class QueriesComposition {
 
         Dataset<Row> result4_3 = outputStreamDecoded2
                 .withWatermark("windowClose", "2 seconds")
-                .groupBy(window(col("windowClose"),"5 seconds"),col("id"))
+                .groupBy(window(col("windowClose"),"10 seconds"),col("id"))
                 .agg(max("maxStress"));
 
 
@@ -266,7 +270,7 @@ public class QueriesComposition {
         ).select("stressTime", "stressId", "status", "stressLevel", "weightTime", "weight");
 
 
-        /*
+
         String finalServer1 = server;
         StreamingQuery query = result4.writeStream().foreach(
                 new ForeachWriter() {
@@ -299,19 +303,20 @@ public class QueriesComposition {
 
                         System.out.println("Process " + modifiedLine + " at time: " + Instant.now());
                         ProducerRecord<String, String> record = new ProducerRecord<>("output", modifiedLine);
-                        try {
-                            producer.send(record).get();
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        } catch (ExecutionException e) {
-                            throw new RuntimeException(e);
+
+                        if (QUERY1){
+                            try {
+                                producer.send(record).get();
+                            } catch (InterruptedException | ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                     @Override public void close(Throwable errorOrNull) {
                     }
                 }
         ).start();
-        */
+
 
         String finalServer = server;
         StreamingQuery query2 = result4_2.writeStream().foreach(
@@ -336,14 +341,14 @@ public class QueriesComposition {
                         }
 
                         String modifiedLine = "";
-                        if (!SEND_TO_KSQL){
+                        if (!QUERY3_ON_KSQLDB){
                             modifiedLine = String.join(",", tokens);
                         } else {
                             ObjectMapper objectMapper = new ObjectMapper();
                             ObjectNode objectNode = objectMapper.createObjectNode();
 
-                            objectNode.put("windowClose", tokens[0]);
-                            objectNode.put("windowOpen", tokens[1]);
+                            objectNode.put("windowOpen", tokens[0]);
+                            objectNode.put("windowClose", tokens[1]);
                             objectNode.put("id", tokens[2]);
                             objectNode.put("maxStress", tokens[3]);
 
@@ -363,21 +368,14 @@ public class QueriesComposition {
                         KafkaProducer<String, String> producer = new KafkaProducer<>(props);
 
                         System.out.println("Process2222222222222222 " + modifiedLine + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/2/output4_2.csv",true))) {
-                            writer.write(modifiedLine);
-                            writer.newLine();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            // Handle IOException appropriately
-                        }
 
                         ProducerRecord<String, String> record = new ProducerRecord<>("output2", modifiedLine);
-                        try {
-                            producer.send(record).get();
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        } catch (ExecutionException e) {
-                            throw new RuntimeException(e);
+                        if (QUERY2){
+                            try {
+                                producer.send(record).get();
+                            } catch (InterruptedException | ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                     @Override public void close(Throwable errorOrNull) {
@@ -386,7 +384,6 @@ public class QueriesComposition {
         ).start();
 
 
-        /*
         StreamingQuery query3 = result4_3.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
@@ -419,21 +416,22 @@ public class QueriesComposition {
                         KafkaProducer<String, String> producer = new KafkaProducer<>(props);
 
                         System.out.println("Process3333333333333333333333 " + modifiedLine + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/3/output4_3.csv",true))) {
-                            writer.write(modifiedLine);
-                            writer.newLine();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            // Handle IOException appropriately
-                        }
 
                         ProducerRecord<String, String> record = new ProducerRecord<>("output3", modifiedLine);
-                        try {
-                            producer.send(record).get();
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        } catch (ExecutionException e) {
-                            throw new RuntimeException(e);
+                        if (QUERY3){
+                            try (BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT_FILE_NAME,true))) {
+                                writer.write(modifiedLine);
+                                writer.newLine();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                // Handle IOException appropriately
+                            }
+
+                            try {
+                                producer.send(record).get();
+                            } catch (InterruptedException | ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                     @Override public void close(Throwable errorOrNull) {
@@ -441,14 +439,12 @@ public class QueriesComposition {
                 }
         ).start();
 
-         */
-
         try {
-            //query.awaitTermination();
+            query.awaitTermination();
             query2.awaitTermination();
-            //query3.awaitTermination();
-        } catch (final StreamingQueryException e) {
-            e.printStackTrace();
+            query3.awaitTermination();
+        } catch (StreamingQueryException e) {
+            throw new RuntimeException(e);
         }
 
 
@@ -458,7 +454,6 @@ public class QueriesComposition {
     @NotNull
     private static String formatTimestamp(String token) {
         return token
-                .replace(".0", "")
-                .replace(":00", "");
+                .replace(".0", "");
     }
 }

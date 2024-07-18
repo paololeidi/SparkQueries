@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 public class StreamGenerator {
 
     private static final String BOOTSTRAP_SERVERS = "localhost:9092"; // Change this to your Kafka bootstrap servers
+    private static final boolean SLOW = false;
 
     public static void main(String[] args) {
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -33,7 +34,12 @@ public class StreamGenerator {
             reader.readLine(); // Skip header
             while ((line = reader.readLine()) != null) {
                 sendRecord(producer, topic, line);
-                //Thread.sleep(1000); // Sleep for 1 second between each message (adjust as needed)
+                if (SLOW){
+                    Thread.sleep(1000); // Sleep between each message (adjust as needed)
+                } else {
+                    Thread.sleep(250); // Sleep between each message (adjust as needed)
+                }
+
             }
         } catch (IOException | InterruptedException | ExecutionException e) {
             System.err.println("Error in " + fileName + " processing: " + e.getMessage());
