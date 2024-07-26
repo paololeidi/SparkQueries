@@ -13,14 +13,14 @@ import java.util.concurrent.Executors;
 
 public class StreamGenerator {
 
-    private static final String BOOTSTRAP_SERVERS = "localhost:9092"; // Change this to your Kafka bootstrap servers
+    private static final String BOOTSTRAP_SERVER = "localhost:19092"; // Change this to your Kafka bootstrap servers
     private static final boolean SLOW = false;
 
     public static void main(String[] args) {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        executor.submit(() -> processFile("Files/Input/stress.csv", "stress"));
-        executor.submit(() -> processFile("Files/Input/weight.csv", "weight"));
+        executor.submit(() -> processFile("Files/Input/stress2.csv", "stress"));
+        executor.submit(() -> processFile("Files/Input/weight2.csv", "weight"));
 
         executor.shutdown();
     }
@@ -48,7 +48,7 @@ public class StreamGenerator {
 
     private static Properties createKafkaProperties() {
         Properties props = new Properties();
-        props.put("bootstrap.servers", BOOTSTRAP_SERVERS);
+        props.put("bootstrap.servers", BOOTSTRAP_SERVER);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         return props;

@@ -1,12 +1,15 @@
 package org.example;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.ForeachWriter;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.streaming.DataStreamWriter;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.jetbrains.annotations.NotNull;
@@ -19,22 +22,19 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import static org.apache.spark.sql.functions.*;
 
 // Must use JAVA 11
-public class QueriesComposition {
+public class QueriesCompositionAutomatization {
 
     private static final boolean JOIN_FORMAT = false;
     private static final String STRESS_TOPIC = "stress";
-    private static final String BOOTSTRAP_SERVER = "localhost:19092";
-    private static final String KSQL_BOOTSTRAP_SERVER = "localhost:19092";
-    private static final boolean QUERY3_ON_KSQLDB = true;
+    private static final String BOOTSTRAP_SERVER = "localhost:9092";
+    private static final String KSQL_BOOTSTRAP_SERVER = "localhost:9092";
+    private static final boolean QUERY3_ON_KSQLDB = false;
     private static final boolean QUERY1 = true;
     private static final boolean QUERY2 = true;
-    private static final boolean QUERY3 = false;
+    private static final boolean QUERY3 = true;
     public static final String OUTPUT_FILE_NAME = "Files/Output/Networks/flink-spark-spark.csv";
 
 
@@ -204,75 +204,41 @@ public class QueriesComposition {
                 .count().alias("numberOfEvents");
 
         // Second level queries
+        String[] columns = new String[4];
+        columns[0] = "windowOpen";
+        columns[1] = "windowClose";
+        columns[2] = "id";
+        columns[3] = "maxStress";
 
-        Dataset<Row> outputStream = spark
-                .readStream()
-                .format("kafka")
-                .option("kafka.bootstrap.servers", server)
-                .option("subscribe", "output")
-                .load();
+        DataStreamWriter query2writer = createSlidingWindowQuery(
+                spark,
+                finalServer,
+                "output",
+                columns,
+                columns,
+                "4 seconds",
+                "2 seconds",
+                "id",
+                "maxStress",
+                QUERY3_ON_KSQLDB,
+                "output2"
+        );
 
-        Dataset<Row> outputStreamDecoded = outputStream
-                .selectExpr("CAST(value AS STRING) as data")
-                .selectExpr("from_csv(data, 'windowOpen TIMESTAMP, windowClose TIMESTAMP, id INT, maxStress INT') as decoded_data")
-                .selectExpr(
-                        "decoded_data.windowOpen as windowOpen",
-                        "decoded_data.windowClose as windowClose",
-                        "decoded_data.id as id",
-                        "decoded_data.maxStress as maxStress");
-
-        Dataset<Row> result4_2 = outputStreamDecoded
-                .withWatermark("windowClose", "2 seconds")
-                .groupBy(window(col("windowClose"),"4 seconds", "2 seconds"),col("id"))
-                .agg(max("maxStress"));
-
-        StreamingQuery query2 = result4_2.writeStream().foreach(
-                new ForeachWriter() {
-                    @Override
-                    public boolean open(long partitionId, long epochId) {
-                        return true;
-                    }
-                    @Override
-                    public void process(Object value) {
-                        String[] tokens = getTokens(value);
-
-                        String modifiedLine = "";
-                        if (!QUERY3_ON_KSQLDB){
-                            modifiedLine = String.join(",", tokens);
-                        } else {
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            ObjectNode objectNode = objectMapper.createObjectNode();
-
-                            objectNode.put("windowOpen", tokens[0]);
-                            objectNode.put("windowClose", tokens[1]);
-                            objectNode.put("id", tokens[2]);
-                            objectNode.put("maxStress", tokens[3]);
-
-                            try {
-                                modifiedLine = objectMapper.writeValueAsString(objectNode);
-                            } catch (JsonProcessingException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
+        StreamingQuery query2 = query2writer.start();
 
 
-                        KafkaProducer<String, String> producer = getStringStringKafkaProducer(finalServer);
-
-                        System.out.println("Process2222222222222222 " + modifiedLine + " at time: " + Instant.now());
-
-                        ProducerRecord<String, String> record = new ProducerRecord<>("output2", modifiedLine);
-                        if (QUERY2){
-                            try {
-                                producer.send(record).get();
-                            } catch (InterruptedException | ExecutionException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    }
-                    @Override public void close(Throwable errorOrNull) {
-                    }
-                }
-        ).start();
+        DataStreamWriter query3writer = createTumblingWindowQuery(
+                spark,
+                server,
+                "output2",
+                columns,
+                columns,
+                "10 seconds",
+                "id",
+                "maxStress",
+                QUERY3_ON_KSQLDB,
+                "output3"
+        );
 
         // Third level queries
         Dataset<Row> outputStream2 = spark
@@ -295,32 +261,6 @@ public class QueriesComposition {
                 .withWatermark("windowClose", "2 seconds")
                 .groupBy(window(col("windowClose"),"10 seconds"),col("id"))
                 .agg(max("maxStress"));
-
-
-        // Apply watermarks on event-time columns
-        Dataset<Row> stressWithWatermark = stressStreamDecoded.withWatermark("stressTime", "30 seconds");
-        Dataset<Row> weightWithWatermark = weightStreamDecoded.withWatermark("weightTime", "30 seconds");
-
-        Dataset<Row> join = stressWithWatermark.join(
-                weightWithWatermark,
-                expr(
-                        "stressId = weightId AND " +
-                                "weightTime >= stressTime - interval 5 seconds AND " +
-                                "weightTime <= stressTime + interval 5 seconds "),
-                "leftOuter"                 // can be "inner", "leftOuter", "rightOuter", "fullOuter", "leftSemi"
-        ).select("stressTime", "stressId", "status", "stressLevel", "weightTime", "weight");
-
-
-
-
-
-
-
-
-
-
-
-
 
         StreamingQuery query3 = result4_3.writeStream().foreach(
                 new ForeachWriter() {
@@ -360,6 +300,34 @@ public class QueriesComposition {
                 }
         ).start();
 
+
+        // Apply watermarks on event-time columns
+        Dataset<Row> stressWithWatermark = stressStreamDecoded.withWatermark("stressTime", "30 seconds");
+        Dataset<Row> weightWithWatermark = weightStreamDecoded.withWatermark("weightTime", "30 seconds");
+
+        Dataset<Row> join = stressWithWatermark.join(
+                weightWithWatermark,
+                expr(
+                        "stressId = weightId AND " +
+                                "weightTime >= stressTime - interval 5 seconds AND " +
+                                "weightTime <= stressTime + interval 5 seconds "),
+                "leftOuter"                 // can be "inner", "leftOuter", "rightOuter", "fullOuter", "leftSemi"
+        ).select("stressTime", "stressId", "status", "stressLevel", "weightTime", "weight");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         Dataset<Row> result4 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
                 .groupBy(window(col("stressTime"),"2 seconds"),col("stressId"))
@@ -378,7 +346,7 @@ public class QueriesComposition {
                         KafkaProducer<String, String> producer = getStringStringKafkaProducer(finalServer);
 
                         System.out.println("Process " + modifiedLine + " at time: " + Instant.now());
-                        ProducerRecord<String, String> record = new ProducerRecord<>("output", modifiedLine);
+                        ProducerRecord<String, String> record = new ProducerRecord<>("query4", modifiedLine);
 
                         if (QUERY1){
                             try {
@@ -506,6 +474,167 @@ public class QueriesComposition {
 
 
         spark.close();
+    }
+
+    private static DataStreamWriter createSlidingWindowQuery(
+            SparkSession spark,
+            String server,
+            String sourceTopic,
+            String[] inputColumns,
+            String[] outputColumns,
+            String windowDuration,
+            String slideDuration,
+            String groupByColumn,
+            String maxColumn,
+            boolean sendToKsqlDB,
+            final String outputTopic) throws TimeoutException {
+        Dataset<Row> outputStream = spark
+                .readStream()
+                .format("kafka")
+                .option("kafka.bootstrap.servers", server)
+                .option("subscribe", sourceTopic)
+                .load();
+
+        Dataset<Row> outputStreamDecoded = outputStream
+                .selectExpr("CAST(value AS STRING) as data")
+                .selectExpr("from_csv(data, 'f1 TIMESTAMP, f2 TIMESTAMP, f3 INT, f4 INT') as decoded_data")
+                .selectExpr(
+                        "decoded_data.f1 as " + inputColumns[0],
+                        "decoded_data.f2 as " + inputColumns[1],
+                        "decoded_data.f3 as " + inputColumns[2],
+                        "decoded_data.f4 as " + inputColumns[3]);
+
+        Dataset<Row> result = outputStreamDecoded
+                .withWatermark("windowClose", "2 seconds")
+                .groupBy(window(col("windowClose"), windowDuration, slideDuration),col(groupByColumn))
+                .agg(max(maxColumn));
+
+        DataStreamWriter query2writer = result.writeStream().foreach(
+                new ForeachWriter() {
+                    @Override
+                    public boolean open(long partitionId, long epochId) {
+                        return true;
+                    }
+                    @Override
+                    public void process(Object value) {
+                        String[] tokens = getTokens(value);
+
+                        String modifiedLine;
+
+                        if (!sendToKsqlDB){
+                            modifiedLine = String.join(",", tokens);
+                        } else {
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            ObjectNode objectNode = objectMapper.createObjectNode();
+
+                            objectNode.put(outputColumns[0], tokens[0]);
+                            objectNode.put(outputColumns[1], tokens[1]);
+                            objectNode.put(outputColumns[2], tokens[2]);
+                            objectNode.put(outputColumns[3], tokens[3]);
+
+                            try {
+                                modifiedLine = objectMapper.writeValueAsString(objectNode);
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+
+                        KafkaProducer<String, String> producer = getStringStringKafkaProducer(server);
+
+                        System.out.println("Process2222222222222222 " + modifiedLine + " at time: " + Instant.now());
+
+                        ProducerRecord<String, String> record = new ProducerRecord<>(outputTopic, modifiedLine);
+                        try {
+                            producer.send(record).get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    @Override public void close(Throwable errorOrNull) {
+                    }
+                }
+        );
+        return query2writer;
+    }
+
+    private static DataStreamWriter createTumblingWindowQuery(
+            SparkSession spark,
+            String server,
+            String sourceTopic,
+            String[] inputColumns,
+            String[] outputColumns,
+            String windowDuration,
+            String groupByColumn,
+            String maxColumn,
+            boolean sendToKsqlDB,
+            final String outputTopic) throws TimeoutException {
+        Dataset<Row> outputStream = spark
+                .readStream()
+                .format("kafka")
+                .option("kafka.bootstrap.servers", server)
+                .option("subscribe", sourceTopic)
+                .load();
+
+        Dataset<Row> outputStreamDecoded = outputStream
+                .selectExpr("CAST(value AS STRING) as data")
+                .selectExpr("from_csv(data, 'f1 TIMESTAMP, f2 TIMESTAMP, f3 INT, f4 INT') as decoded_data")
+                .selectExpr(
+                        "decoded_data.f1 as " + inputColumns[0],
+                        "decoded_data.f2 as " + inputColumns[1],
+                        "decoded_data.f3 as " + inputColumns[2],
+                        "decoded_data.f4 as " + inputColumns[3]);
+
+        Dataset<Row> result = outputStreamDecoded
+                .withWatermark("windowClose", "2 seconds")
+                .groupBy(window(col("windowClose"), windowDuration),col(groupByColumn))
+                .agg(max(maxColumn));
+
+        DataStreamWriter query2writer = result.writeStream().foreach(
+                new ForeachWriter() {
+                    @Override
+                    public boolean open(long partitionId, long epochId) {
+                        return true;
+                    }
+                    @Override
+                    public void process(Object value) {
+                        String[] tokens = getTokens(value);
+
+                        String modifiedLine;
+
+                        if (!sendToKsqlDB){
+                            modifiedLine = String.join(",", tokens);
+                        } else {
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            ObjectNode objectNode = objectMapper.createObjectNode();
+
+                            objectNode.put(outputColumns[0], tokens[0]);
+                            objectNode.put(outputColumns[1], tokens[1]);
+                            objectNode.put(outputColumns[2], tokens[2]);
+                            objectNode.put(outputColumns[3], tokens[3]);
+
+                            try {
+                                modifiedLine = objectMapper.writeValueAsString(objectNode);
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+
+                        KafkaProducer<String, String> producer = getStringStringKafkaProducer(server);
+
+                        System.out.println("Process2222222222222222 " + modifiedLine + " at time: " + Instant.now());
+
+                        ProducerRecord<String, String> record = new ProducerRecord<>(outputTopic, modifiedLine);
+                        try {
+                            producer.send(record).get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    @Override public void close(Throwable errorOrNull) {
+                    }
+                }
+        );
+        return query2writer;
     }
 
     @NotNull
