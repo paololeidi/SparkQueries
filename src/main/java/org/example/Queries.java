@@ -47,7 +47,7 @@ public class Queries {
                 .load();
 
         Dataset<Row> stressStreamDecoded = stressStream.selectExpr("CAST(value AS STRING) as data")
-                .selectExpr("from_csv(data, 'stressTime TIMESTAMP, stressId INT, status STRING, stressLevel INT') as decoded_data")
+                .selectExpr("from_json(data, 'stressTime TIMESTAMP, stressId INT, status STRING, stressLevel INT') as decoded_data")
                 .selectExpr(
                         "decoded_data.stressId as stressId",
                         "decoded_data.status as status",
@@ -57,7 +57,7 @@ public class Queries {
         stressStreamDecoded.printSchema();
 
         Dataset<Row> weightStreamDecoded = weightStream.selectExpr("CAST(value AS STRING) as data")
-                .selectExpr("from_csv(data, 'weightTime TIMESTAMP, weightId INT, weight FLOAT') as decoded_data")
+                .selectExpr("from_json(data, 'weightTime TIMESTAMP, weightId INT, weight FLOAT') as decoded_data")
                 .selectExpr(
                         "decoded_data.weightId as weightId",
                         "decoded_data.weight as weight",
@@ -75,15 +75,13 @@ public class Queries {
 
         Dataset<Row> result3 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
-                .groupBy(window(col("stressTime"),"10 seconds","1 second"))
+                .groupBy(session_window(col("stressTime"),"5 seconds"))
                 .agg(max("stressLevel")).alias("max_stress");
 
         Dataset<Row> result4 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
                 .groupBy(window(col("stressTime"),"10 seconds"),col("stressId"))
                 .agg(max("stressLevel"));
-
-        result4.printSchema();
 
         Dataset<Row> result5 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
@@ -92,7 +90,7 @@ public class Queries {
 
         Dataset<Row> result6 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
-                .groupBy(window(col("stressTime"),"10 seconds","1 second"),col("stressId"))
+                .groupBy(session_window(col("stressTime"),"5 seconds"),col("stressId"))
                 .agg(max("stressLevel")).alias("max_stress");
 
         Dataset<Row> result7 = stressStreamDecoded
@@ -107,7 +105,7 @@ public class Queries {
 
         Dataset<Row> result9 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
-                .groupBy(window(col("stressTime"),"10 seconds","1 second"))
+                .groupBy(session_window(col("stressTime"),"5 seconds"))
                 .agg(min("stressLevel")).alias("min_stress");
 
         Dataset<Row> result10 = stressStreamDecoded
@@ -122,7 +120,7 @@ public class Queries {
 
         Dataset<Row> result12 = stressStreamDecoded
                 .withWatermark("stressTime", "2 seconds")
-                .groupBy(window(col("stressTime"),"10 seconds","1 second"),col("stressId"))
+                .groupBy(session_window(col("stressTime"),"5 seconds"),col("stressId"))
                 .agg(min("stressLevel")).alias("min_stress");
 
         Dataset<Row> result13 = weightStreamDecoded
@@ -137,7 +135,7 @@ public class Queries {
 
         Dataset<Row> result15 = weightStreamDecoded
                 .withWatermark("weightTime", "2 seconds")
-                .groupBy(window(col("weightTime"),"10 seconds","1 second"))
+                .groupBy(session_window(col("weightTime"),"5 seconds"))
                 .agg(avg("weight")).alias("avg_weight");
 
         Dataset<Row> result16 = weightStreamDecoded
@@ -152,7 +150,7 @@ public class Queries {
 
         Dataset<Row> result18 = weightStreamDecoded
                 .withWatermark("weightTime", "2 seconds")
-                .groupBy(window(col("weightTime"),"10 seconds","1 second"),col("weightId"))
+                .groupBy(session_window(col("weightTime"),"5 seconds"),col("weightId"))
                 .agg(avg("weight")).alias("avg_weight");
 
         Dataset<Row> result19 = weightStreamDecoded
@@ -167,7 +165,7 @@ public class Queries {
 
         Dataset<Row> result21 = weightStreamDecoded
                 .withWatermark("weightTime", "2 seconds")
-                .groupBy(window(col("weightTime"),"10 seconds","1 second"))
+                .groupBy(session_window(col("weightTime"),"5 seconds"))
                 .count().alias("numberOfEvents");
 
         Dataset<Row> result22 = weightStreamDecoded
@@ -182,7 +180,7 @@ public class Queries {
 
         Dataset<Row> result24 = weightStreamDecoded
                 .withWatermark("weightTime", "2 seconds")
-                .groupBy(window(col("weightTime"),"10 seconds","1 second"),col("weightId"))
+                .groupBy(session_window(col("weightTime"),"5 seconds"),col("weightId"))
                 .count().alias("numberOfEvents");
 
         // Apply watermarks on event-time columns
