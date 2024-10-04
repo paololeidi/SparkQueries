@@ -13,14 +13,14 @@ import java.util.concurrent.Executors;
 
 public class StreamGenerator {
 
-    private static final String BOOTSTRAP_SERVER = "localhost:19092"; // Change this to your Kafka bootstrap servers
-    private static final boolean SLOW = false;
+    private static final String BOOTSTRAP_SERVER = "localhost:9092"; // Change this to your Kafka bootstrap servers
+    private static final boolean SLOW = true;
 
     public static void main(String[] args) {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        executor.submit(() -> processFile("Files/Input/stress2.csv", "stress"));
-        executor.submit(() -> processFile("Files/Input/weight2.csv", "weight"));
+        executor.submit(() -> processFile("Files/Input/stress.csv", "stress"));
+        executor.submit(() -> processFile("Files/Input/weight.csv", "weight"));
 
         executor.shutdown();
     }
