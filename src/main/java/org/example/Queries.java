@@ -35,14 +35,14 @@ public class Queries {
         Dataset<Row> stressStream = spark
                 .readStream()
                 .format("kafka")
-                .option("kafka.bootstrap.servers", "localhost:9092")
+                .option("kafka.bootstrap.servers", "localhost:19092")
                 .option("subscribe", "stress")
                 .load();
 
         Dataset<Row> weightStream = spark
                 .readStream()
                 .format("kafka")
-                .option("kafka.bootstrap.servers", "localhost:9092")
+                .option("kafka.bootstrap.servers", "localhost:19092")
                 .option("subscribe", "weight")
                 .load();
 
@@ -177,7 +177,7 @@ public class Queries {
         ).select("stressTime", "stressId", "status", "stressLevel", "weightTime", "weight");
 
 
-        StreamingQuery query = result20.writeStream().foreach(
+        StreamingQuery query = result3.writeStream().foreach(
                 new ForeachWriter() {
                     @Override
                     public boolean open(long partitionId, long epochId) {
@@ -200,7 +200,7 @@ public class Queries {
                         String modifiedLine = String.join(",", tokens);
 
                         System.out.println("Process " + modifiedLine + " at time: " + Instant.now());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/Queries/output20.csv",true))) {
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Files/Output/Queries/output3.csv",true))) {
                             writer.write(modifiedLine);
                             writer.newLine();
                         } catch (IOException e) {
@@ -225,6 +225,6 @@ public class Queries {
     @NotNull
     private static String formatTimestamp(String token) {
         return token
-                .replace(".0", "");
+                .replace(".0", "").replace(":00","").replace("::",":00:");
     }
 }

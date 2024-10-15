@@ -15,13 +15,13 @@ import java.util.concurrent.ExecutionException;
 
 public class JsonStreamGenerator {
 
-    private static final String BOOTSTRAP_SERVERS = "localhost:9092"; // Change this to your Kafka bootstrap servers
+    private static final String BOOTSTRAP_SERVERS = "localhost:19092"; // Change this to your Kafka bootstrap servers
 
     public static void main(String[] args) {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        executor.submit(() -> processFile("Files/Input/stress.json", "stress"));
-        executor.submit(() -> processFile("Files/Input/weight.json", "weight"));
+        executor.submit(() -> processFile("Files/Streams/stress.json", "stress"));
+        executor.submit(() -> processFile("Files/Streams/weight.json", "weight"));
 
         executor.shutdown();
     }
@@ -38,7 +38,7 @@ public class JsonStreamGenerator {
             while (elements.hasNext()) {
                 JsonNode element = elements.next();
                 sendRecord(producer, topic, element.toString());
-                Thread.sleep(1000); // Sleep for 1 second between each message (adjust as needed)
+                Thread.sleep(250); // Sleep for 1 second between each message (adjust as needed)
             }
         } catch (IOException | InterruptedException | ExecutionException e) {
             System.err.println("Error in " + fileName + " processing: " + e.getMessage());
